@@ -19,6 +19,7 @@ libgstgeometrictransform_la_SOURCES = plugin.c \
                                       gstsquare.c \
                                       gstmirror.c \
                                       gstfisheye.c \
+                                      gstequirectangular.c \                                  
                                       gstperspective.c
 
 libgstgeometrictransform_la_CFLAGS = $(GST_CFLAGS) $(GST_BASE_CFLAGS) \
@@ -48,4 +49,5 @@ noinst_HEADERS = gstgeometrictransform.h \
                  gstsquare.h \
                  gstmirror.h \
                  gstfisheye.h \
+                 gstequirectangular.h \                 
                  gstperspective.h
