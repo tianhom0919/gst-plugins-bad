@@ -42,7 +42,7 @@
  */
 // comment below for development 1.19.2
 // uncomment below for renesas RZ/G2L 1.16.3
-// #define GST_RENESAS
+#define GST_RENESAS
 
 #ifndef __GST_EQUIRECTANGULAR_H__
 #define __GST_EQUIRECTANGULAR_H__
