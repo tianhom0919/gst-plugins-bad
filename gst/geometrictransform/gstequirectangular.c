@@ -46,18 +46,21 @@
  * @title: equirectangular
  * @see_also: geometrictransform
  *
- * Equirectangular is a geometric image transform element. It transform a MOIL fisheye to an
- * equirectangular image .
+ * Equirectangular is a geometric image transform element. It transform a MOIL
+ * fisheye to an equirectangular image .
  *
  * ## Example launch line
  * |[
- * gst-launch-1.0 -v videotestsrc ! equirectangular ! videoconvert ! autovideosink
+ * gst-launch-1.0 -v videotestsrc ! equirectangular ! videoconvert !
+ * autovideosink
  * ]|
  *
  */
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#include <config.h>
 #endif
 
 #include <gst/gst.h>
@@ -65,93 +68,101 @@
 
 #include "gstequirectangular.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_equirectangular_debug);
+GST_DEBUG_CATEGORY_STATIC(gst_equirectangular_debug);
 #define GST_CAT_DEFAULT gst_equirectangular_debug
 
 #define gst_equirectangular_parent_class parent_class
-G_DEFINE_TYPE (GstEquirectangular, gst_equirectangular, GST_TYPE_GEOMETRIC_TRANSFORM);
+G_DEFINE_TYPE(GstEquirectangular, gst_equirectangular,
+              GST_TYPE_GEOMETRIC_TRANSFORM);
 
-static gboolean
-equirectangular_map (GstGeometricTransform * gt, gint x, gint y, gdouble * in_x,
-    gdouble * in_y)
-{
-#ifndef GST_DISABLE_GST_DEBUG
-  GstEquirectangular *equirectangular = GST_EQUIRECTANGULAR_CAST (gt);
+#ifndef GST_RENESAS
+// 1.19.2
+GST_ELEMENT_REGISTER_DEFINE_WITH_CODE(
+    equirectangular, "equirectangular", GST_RANK_NONE, GST_TYPE_EQUIRECTANGULAR,
+    GST_DEBUG_CATEGORY_INIT(gst_equirectangular_debug, "equirectangular", 0,
+                            "equirectangular"));
 #endif
-  gdouble norm_x;
-  gdouble norm_y;
-  gdouble r;
 
-  gdouble width = gt->width;
-  gdouble height = gt->height;
+float *buf_x;
+float *buf_y;
+FILE *fptr_x;
+FILE *fptr_y;
+static gboolean equirectangular_map(GstGeometricTransform *gt, gint x, gint y,
+                                    gdouble *in_x, gdouble *in_y) {
+#ifndef GST_DISABLE_GST_DEBUG
+    GstEquirectangular *equirectangular = GST_EQUIRECTANGULAR_CAST(gt);
+#endif
+    gdouble norm_x;
+    gdouble norm_y;
+    gdouble r;
 
-  /* normalize in ((-1.0, -1.0), (1.0, 1.0) */
-  norm_x = 2.0 * x / width - 1.0;
-  norm_y = 2.0 * y / height - 1.0;
+    gdouble width = gt->width;
+    gdouble height = gt->height;
 
-  /* normalize radius to 1, simplifies following formula */
-  r = sqrt ((norm_x * norm_x + norm_y * norm_y) / 2.0);
+    float *p_x = buf_x + ((y - 1) * (int)width + x);
+    float *p_y = buf_y + ((y - 1) * (int)width + x);
 
-  /* the idea is roughly to map r to tan(r) */
-  /* to avoid switching back and forth to polar coordinates use
-     tangent expansion */
-  /*   r = a*r + br^3 + cr^5 + dr^7 + o(8)) */
-  /*     = r(a + br^2 + cr^4 + dr^6) */
-  /* so we can just multiply both x and y by the quantity in parenthesis */
-  /* forgetting about the tangent thing and simplifying things a
-     little bit we have a first linear term that, inverted, gives
-     the zoom amount in the center region (3x here), than a high
-     power term that makes the function blow up at the edges and a
-     quadratic term smooths the middle region */
-  /* coefficients must sum up to 1 to keep vertices in the +-1
-     square */
-  /* obviously this is a poor and arbitrary implementation of a
-     equirectangular filter, if you have a more rigorous method or one
-     that gives better results please step up */
-  norm_x *= (0.33 + 0.1 * r * r + 0.57 * pow (r, 6.0));
-  norm_y *= (0.33 + 0.1 * r * r + 0.57 * pow (r, 6.0));
+    *in_x = (gdouble)*p_x;
+    *in_y = (gdouble)*p_y;
 
-  /* unnormalize */
-  *in_x = 0.5 * (norm_x + 1.0) * width;
-  *in_y = 0.5 * (norm_y + 1.0) * height;
+    GST_DEBUG_OBJECT(equirectangular, "Inversely mapped %d %d into %lf %lf", x,
+                     y, *in_x, *in_y);
 
-  GST_DEBUG_OBJECT (equirectangular, "Inversely mapped %d %d into %lf %lf",
-      x, y, *in_x, *in_y);
-
-  return TRUE;
+    return TRUE;
 }
 
-static void
-gst_equirectangular_class_init (GstEquirectangularClass * klass)
-{
-  GstElementClass *gstelement_class;
-  GstGeometricTransformClass *gstgt_class;
+static void gst_equirectangular_class_init(GstEquirectangularClass *klass) {
+    GstElementClass *gstelement_class;
+    GstGeometricTransformClass *gstgt_class;
 
-  gstelement_class = (GstElementClass *) klass;
-  gstgt_class = (GstGeometricTransformClass *) klass;
+    gstelement_class = (GstElementClass *)klass;
+    gstgt_class = (GstGeometricTransformClass *)klass;
 
-  gst_element_class_set_static_metadata (gstelement_class,
-      "equirectangular",
-      "Transform/Effect/Video",
-      "Simulate a equirectangular image",
-      "Filippo Argiolas <filippo.argiolas@gmail.com>");
+    gst_element_class_set_static_metadata(
+        gstelement_class, "equirectangular", "Transform/Effect/Video",
+        "Simulate a equirectangular image",
+        "Filippo Argiolas <filippo.argiolas@gmail.com>");
 
-  gstgt_class->map_func = equirectangular_map;
+    gstgt_class->map_func = equirectangular_map;
+
+    fptr_x = fopen("EquimatX", "rb");
+    fptr_y = fopen("EquimatY", "rb");
+    if ((fptr_x != NULL) && (fptr_y != NULL)) {
+        int Buf_Size = 1920 * 1080;
+        buf_x = malloc(sizeof(float) * Buf_Size);
+        buf_y = malloc(sizeof(float) * Buf_Size);
+        int rows, cols, type, channels;
+        fread(&rows, 1, sizeof(int), fptr_x);
+        fread(&cols, 1, sizeof(int), fptr_x);
+        fread(&type, 1, sizeof(int), fptr_x);
+        fread(&channels, 1, sizeof(int), fptr_x);
+        fread(buf_x, Buf_Size, sizeof(float), fptr_x);
+        fread(&rows, 1, sizeof(int), fptr_y);
+        fread(&cols, 1, sizeof(int), fptr_y);
+        fread(&type, 1, sizeof(int), fptr_y);
+        fread(&channels, 1, sizeof(int), fptr_y);
+        fread(buf_y, Buf_Size, sizeof(float), fptr_y);
+        fprintf(stdout, "( rows, cols ) = ( %d, %d ) \n", rows, cols);
+        fprintf(stdout, "X, Y Mats Loaded! \n");
+    } else {
+        if (errno != 0)
+            fprintf(stderr, "Could not open mat file, for this reason: %s\n!",
+                    strerror(errno));
+        else
+            fprintf(stderr, "Unknown errors.\n");
+    }
 }
 
-static void
-gst_equirectangular_init (GstEquirectangular * filter)
-{
-  GstGeometricTransform *gt = GST_GEOMETRIC_TRANSFORM (filter);
+static void gst_equirectangular_init(GstEquirectangular *filter) {
+    GstGeometricTransform *gt = GST_GEOMETRIC_TRANSFORM(filter);
 
-  gt->off_edge_pixels = GST_GT_OFF_EDGES_PIXELS_CLAMP;
+    gt->off_edge_pixels = GST_GT_OFF_EDGES_PIXELS_CLAMP;
 }
 
-gboolean
-gst_equirectangular_plugin_init (GstPlugin * plugin)
-{
-  GST_DEBUG_CATEGORY_INIT (gst_equirectangular_debug, "equirectangular", 0, "equirectangular");
+gboolean gst_equirectangular_plugin_init(GstPlugin *plugin) {
+    GST_DEBUG_CATEGORY_INIT(gst_equirectangular_debug, "equirectangular", 0,
+                            "equirectangular");
 
-  return gst_element_register (plugin, "equirectangular", GST_RANK_NONE,
-      GST_TYPE_EQUIRECTANGULAR);
+    return gst_element_register(plugin, "equirectangular", GST_RANK_NONE,
+                                GST_TYPE_EQUIRECTANGULAR);
 }

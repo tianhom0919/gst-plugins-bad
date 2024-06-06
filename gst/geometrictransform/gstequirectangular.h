@@ -40,44 +40,49 @@
  * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
  * Boston, MA 02110-1301, USA.
  */
+// comment below for development 1.19.2
+// uncomment below for renesas RZ/G2L 1.16.3
+// #define GST_RENESAS
 
 #ifndef __GST_EQUIRECTANGULAR_H__
 #define __GST_EQUIRECTANGULAR_H__
 
-#include <gst/gst.h>
-#include "gstgeometrictransform.h"
 #include "geometricmath.h"
+#include "gstgeometrictransform.h"
+#include <gst/gst.h>
 
 G_BEGIN_DECLS
 /* #defines don't like whitespacey bits */
-#define GST_TYPE_EQUIRECTANGULAR \
-  (gst_equirectangular_get_type())
-#define GST_EQUIRECTANGULAR(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_EQUIRECTANGULAR,GstEquirectangular))
-#define GST_EQUIRECTANGULAR_CAST(obj) \
-  ((GstEquirectangular *)(obj))
-#define GST_EQUIRECTANGULAR_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_EQUIRECTANGULAR,GstEquirectangularClass))
-#define GST_IS_EQUIRECTANGULAR(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_EQUIRECTANGULAR))
-#define GST_IS_EQUIRECTANGULAR_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_EQUIRECTANGULAR))
+#define GST_TYPE_EQUIRECTANGULAR (gst_equirectangular_get_type())
+#define GST_EQUIRECTANGULAR(obj)                                               \
+    (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_EQUIRECTANGULAR,               \
+                                GstEquirectangular))
+#define GST_EQUIRECTANGULAR_CAST(obj) ((GstEquirectangular *)(obj))
+#define GST_EQUIRECTANGULAR_CLASS(klass)                                       \
+    (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_EQUIRECTANGULAR,                \
+                             GstEquirectangularClass))
+#define GST_IS_EQUIRECTANGULAR(obj)                                            \
+    (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_EQUIRECTANGULAR))
+#define GST_IS_EQUIRECTANGULAR_CLASS(klass)                                    \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_EQUIRECTANGULAR))
 typedef struct _GstEquirectangular GstEquirectangular;
 typedef struct _GstEquirectangularClass GstEquirectangularClass;
 
-struct _GstEquirectangular
-{
-  GstGeometricTransform element;
+struct _GstEquirectangular {
+    GstGeometricTransform element;
 };
 
-struct _GstEquirectangularClass
-{
-  GstGeometricTransformClass parent_class;
+struct _GstEquirectangularClass {
+    GstGeometricTransformClass parent_class;
 };
 
-GType gst_equirectangular_get_type (void);
-
-gboolean gst_equirectangular_plugin_init (GstPlugin * plugin);
-
+GType gst_equirectangular_get_type(void);
+#ifdef GST_RENESAS
+// 1.16.3
+gboolean gst_equirectangular_plugin_init(GstPlugin *plugin);
+#else
+// 1.19.2
+GST_ELEMENT_REGISTER_DECLARE(equirectangular);
+#endif
 G_END_DECLS
 #endif /* __GST_EQUIRECTANGULAR_H__ */
