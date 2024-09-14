@@ -130,7 +130,7 @@ static void gst_equirectangular_class_init(GstEquirectangularClass *klass) {
         "Simulate a equirectangular image",
         "Filippo Argiolas <filippo.argiolas@gmail.com>");
 
-    gstgt_class->map_func = equirectangular_map;
+
 
     fptr_x = fopen("EquimatX", "rb");
     fptr_y = fopen("EquimatY", "rb");
@@ -160,7 +160,8 @@ static void gst_equirectangular_class_init(GstEquirectangularClass *klass) {
                     strerror(errno));
         else
             fprintf(stderr, "Unknown errors.\n");
-    }    
+    }
+    gstgt_class->map_func = equirectangular_map;    
 }
 }
 
