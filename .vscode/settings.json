@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "gstperspective.h": "c"
+        "gstperspective.h": "c",
+        "gstgeometrictransform.h": "c",
+        "geometricmath.h": "c"
     }
 }
